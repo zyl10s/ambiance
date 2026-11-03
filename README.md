@@ -1,8 +1,13 @@
 # Ambiance
 
-A Windows-first, open-source desktop ambient sound mixer with five distinct visual themes. Inspired by the simplicity of Blanket, but not affiliated with it.
+A Windows-first, open-source desktop study aide and ambient sound mixer with five distinct visual themes. Inspired by the simplicity of Blanket, but not affiliated with it.
 
 ## Features
+
+- Configurable Pomodoro timer, short and long breaks, pause/resume, optional auto-next and completed-session count.
+- Optional dismissible second-monitor distraction shield during focus sessions (Windows desktop).
+- Shortcut to Windows notification settings for Do not disturb (no automatic OS notification suppression).
+- Optional timer completion notifications where supported.
 
 - Mix looping ambient audio with independent volume and mute controls.
 - Five themes: Dark Academia, Light Academia, Modern, Gothic, Cyberpunk.
