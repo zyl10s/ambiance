@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Plus, Save, Trash2, Volume2, VolumeX, Settings2, Music2, CloudRain, CloudDrizzle, Wind, Waves, Flame, TreePine, Bird, Coffee, TrainFront, Moon, GripVertical, Grip, Radio, Droplets, Fan, BookOpen, CloudLightning } from 'lucide-react';
+import { Play, Pause, Plus, Save, Trash2, Volume2, VolumeX, Settings2, Music2, CloudRain, CloudDrizzle, Wind, Waves, Flame, TreePine, Bird, Coffee, TrainFront, Moon, GripVertical, Grip, Radio, Droplets, Fan, BookOpen, CloudLightning, Timer, RotateCcw } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
 import { appDataDir, join } from '@tauri-apps/api/path';
 import { mkdir, readDir, readFile, writeFile } from '@tauri-apps/plugin-fs';
@@ -8,14 +8,14 @@ import { open } from '@tauri-apps/plugin-dialog';
 type Theme = 'dark-academia' | 'light-academia' | 'romantic-academia' | 'modern' | 'gothic' | 'cyberpunk';
 type Sound = { id: string; name: string; file: string; volume: number; muted: boolean; active: boolean; icon?: string };
 type Preset = { id: string; name: string; mix: Pick<Sound,'id'|'volume'|'muted'|'active'>[] };
-type Settings = { theme: Theme; autoplay: 'off'|'last'|'preset'; launchPreset: string; startHidden: boolean };
+type Settings = { theme: Theme; autoplay: 'off'|'last'|'preset'; launchPreset: string; startHidden: boolean; pomodoroMinutes?: number; chimeEnabled?: boolean };
 const themes: { id: Theme; label: string }[] = [
   {id:'dark-academia',label:'Dark Academia'}, {id:'light-academia',label:'Light Academia'}, {id:'romantic-academia',label:'Romantic Academia'},
   {id:'modern',label:'Modern'}, {id:'gothic',label:'Gothic'}, {id:'cyberpunk',label:'Cyberpunk'}
 ];
 const builtins=[['rain','Rain','rain'],['storm','Thunderstorm','storm'],['wind','Wind','wind'],['waves','Ocean','waves'],['fire','Fireplace','fire'],['forest','Forest','forest'],['birds','Birds','birds'],['cafe','Café','cafe'],['train','Train','train'],['night','Night','night'],['stream','Stream','stream'],['fan','Fan','fan'],['library','Library','library'],['drizzle','Light rain','drizzle']] as const;
 const icons:Record<string,typeof Volume2>={rain:CloudRain,storm:CloudLightning,wind:Wind,waves:Waves,fire:Flame,forest:TreePine,birds:Bird,cafe:Coffee,train:TrainFront,night:Moon,stream:Droplets,fan:Fan,library:BookOpen,drizzle:CloudDrizzle,music:Music2,radio:Radio};
-const defaultSettings: Settings = {theme:'dark-academia',autoplay:'off',launchPreset:'',startHidden:false};
+const defaultSettings: Settings = {theme:'dark-academia',autoplay:'off',launchPreset:'',startHidden:false,pomodoroMinutes:25,chimeEnabled:true};
 const stored = <T,>(key: string, fallback: T): T => { try { return JSON.parse(localStorage.getItem(key) || '') as T; } catch { return fallback; } };
 const persist = (key:string,value:unknown) => localStorage.setItem(key,JSON.stringify(value));
 const uid = () => crypto.randomUUID();
@@ -32,6 +32,44 @@ export default function App() {
   const [dragging,setDragging]=useState<string|null>(null);
   const [customIcon,setCustomIcon]=useState('music');
   const [adding,setAdding]=useState(false);
+  const [timerStarted,setTimerStarted]=useState(false);
+  const [timerRunning,setTimerRunning]=useState(false);
+  const [timerSeconds,setTimerSeconds]=useState(25*60);
+  const timerDeadline=useRef<number|null>(null);
+  const timerRemaining=useRef(25*60);
+  const timerRunningRef=useRef(false);
+  const chimeContext=useRef<AudioContext|null>(null);
+  const chime=()=>{
+    try{
+      const ctx=chimeContext.current??new AudioContext();chimeContext.current=ctx;
+      void ctx.resume();
+      [0,0.23,0.46].forEach((delay,i)=>{
+        const osc=ctx.createOscillator(),gain=ctx.createGain();
+        osc.type='sine';osc.frequency.value=[784,988,1175][i];
+        gain.gain.setValueAtTime(0.0001,ctx.currentTime+delay);
+        gain.gain.exponentialRampToValueAtTime(0.14,ctx.currentTime+delay+0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+delay+0.55);
+        osc.connect(gain);gain.connect(ctx.destination);
+        osc.start(ctx.currentTime+delay);osc.stop(ctx.currentTime+delay+0.57);
+      });
+    }catch{setNotice('Chime could not play on this device.');}
+  };
+  const toggleTimer=()=>{
+    if(!timerStarted){const n=(settings.pomodoroMinutes??25)*60;timerRemaining.current=n;setTimerSeconds(n);setTimerStarted(true);timerDeadline.current=Date.now()+n*1000;timerRunningRef.current=true;setTimerRunning(true);}
+    else if(timerRunningRef.current){const n=Math.max(0,Math.ceil(((timerDeadline.current??Date.now())-Date.now())/1000));timerRemaining.current=n;setTimerSeconds(n);timerRunningRef.current=false;setTimerRunning(false);timerDeadline.current=null;}
+    else{timerDeadline.current=Date.now()+timerRemaining.current*1000;timerRunningRef.current=true;setTimerRunning(true);}
+  };
+  const resetTimer=()=>{timerRunningRef.current=false;setTimerRunning(false);setTimerStarted(false);timerDeadline.current=null;const n=(settings.pomodoroMinutes??25)*60;timerRemaining.current=n;setTimerSeconds(n);};
+  useEffect(()=>{
+    if(!timerRunning)return;
+    const tick=()=>{
+      const n=Math.max(0,Math.ceil(((timerDeadline.current??Date.now())-Date.now())/1000));
+      timerRemaining.current=n;setTimerSeconds(n);
+      if(n===0){timerRunningRef.current=false;setTimerRunning(false);timerDeadline.current=null;if(settings.chimeEnabled!==false)chime();setNotice('Pomodoro finished.');}
+    };
+    tick();const interval=window.setInterval(tick,250);return()=>window.clearInterval(interval);
+  },[timerRunning,settings.chimeEnabled]);
+
   const audio = useRef<Map<string,HTMLAudioElement>>(new Map());
   const urls = useRef<Map<string,string>>(new Map());
   const soundsRef = useRef(sounds); soundsRef.current=sounds;
@@ -142,9 +180,17 @@ export default function App() {
       <label>Theme <select value={settings.theme} onChange={e=>setSettings({...settings,theme:e.target.value as Theme})}>{themes.map(t=><option value={t.id} key={t.id}>{t.label}</option>)}</select></label>
       <label>On launch <select value={settings.autoplay} onChange={e=>setSettings({...settings,autoplay:e.target.value as Settings['autoplay']})}><option value="off">Do not play</option><option value="last">Last sounds</option><option value="preset">Preset</option></select></label>
       {settings.autoplay==='preset'&&<label>Preset <select value={settings.launchPreset} onChange={e=>setSettings({...settings,launchPreset:e.target.value})}><option value="">Select preset</option>{presets.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label>}
+      <label>Pomodoro (minutes) <input type="number" min="1" max="180" value={settings.pomodoroMinutes??25} onChange={e=>{const minutes=Math.max(1,Math.min(180,Number(e.target.value)||25));setSettings({...settings,pomodoroMinutes:minutes});if(!timerStarted){timerRemaining.current=minutes*60;setTimerSeconds(minutes*60);}}}/></label>
+      <label><span>Completion chime</span><input type="checkbox" checked={settings.chimeEnabled!==false} onChange={e=>setSettings({...settings,chimeEnabled:e.target.checked})}/></label>
       <label><span>Start in tray</span><input type="checkbox" checked={settings.startHidden} onChange={e=>setSettings({...settings,startHidden:e.target.checked})}/></label>
     </section>}
-    <main className="player-main"><div className="player-grid">{sounds.map(s=>{const Icon=icons[s.icon||'music']||Music2;return <div className={'player-sound '+(s.active?'is-active ':'')+(reordering?'reordering':'')} key={s.id}
+    <main className="player-main"><div className="player-grid">
+      <div className={'player-sound pomodoro-tile '+(timerStarted?'is-active':'')}>
+        <button className="sound-switch" onClick={toggleTimer} title={!timerStarted?'Start Pomodoro':timerRunning?'Pause Pomodoro':'Resume Pomodoro'} aria-label={!timerStarted?'Start Pomodoro':timerRunning?'Pause Pomodoro':'Resume Pomodoro'}><Timer size={24}/></button>
+        <button className="pomodoro-label" onClick={toggleTimer} title={!timerStarted?'Start Pomodoro':timerRunning?'Pause Pomodoro':'Resume Pomodoro'}>{timerStarted?String(Math.floor(timerSeconds/60)).padStart(2,'0')+':'+String(timerSeconds%60).padStart(2,'0'):'Pomodoro'}</button>
+        <div className="pomodoro-bottom">{timerStarted?<><span>{timerRunning?'Running':'Paused'}</span><button className="icon-button" title="Reset Pomodoro" aria-label="Reset Pomodoro" onClick={resetTimer}><RotateCcw size={15}/></button></>:<span> </span>}</div>
+      </div>
+      {sounds.map(s=>{const Icon=icons[s.icon||'music']||Music2;return <div className={'player-sound '+(s.active?'is-active ':'')+(reordering?'reordering':'')} key={s.id}
       onDragOver={e=>{if(reordering){e.preventDefault();e.dataTransfer.dropEffect='move';}}}
       onDrop={e=>{e.preventDefault();if(dragging)move(dragging,s.id);setDragging(null);}}
       onDragEnd={()=>setDragging(null)}>
