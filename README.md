@@ -4,9 +4,9 @@ A Windows-first, open-source desktop study aide and ambient sound mixer with fiv
 
 ## Features
 
-- Configurable Pomodoro timer, short and long breaks, pause/resume, optional auto-next and completed-session count.
-- Optional dismissible second-monitor distraction shield during focus sessions (Windows desktop).
-- Shortcut to Windows notification settings for Do not disturb (no automatic OS notification suppression).
+- One soundscape dashboard with a compact Pomodoro button that expands into a timer; configurable focus and break durations, pause/resume, optional auto-next and completed-session count.
+- Optional dismissible second-monitor distraction shield during focus sessions or manually at any time. Configurable shortcut works **while the Ambiance window has keyboard focus**; a global Windows hotkey is not yet implemented.
+- Gear icon in the dashboard opens appearance, launch and focus settings. Optional Do not disturb reminder and shortcut to Windows notification settings; **automatic OS notification suppression is not implemented**.
 - Optional timer completion notifications where supported.
 
 - Mix looping ambient audio with independent volume and mute controls.
