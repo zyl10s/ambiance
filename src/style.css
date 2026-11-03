@@ -52,3 +52,24 @@ body{font-family:'DM Sans',sans-serif}
 .add-track-panel select{max-width:120px;background:var(--bg);color:var(--text);border:1px solid var(--border);padding:8px;border-radius:6px}
 @media(max-width:650px){.player-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:420px){.player-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.add-track-panel{left:12px;right:12px;flex-wrap:wrap}}
+
+/* Theme identities: restrained surfaces, typography, and material details. */
+:root[data-theme=dark-academia]{--bg:#191711;--panel:#28251d;--border:#514735;--text:#eadfc9;--muted:#afa38d;--accent:#c3a36b;--accent-text:#1c170f;--heading:Georgia,serif;--surface-detail:linear-gradient(145deg,#ffffff07,transparent 62%)}
+:root[data-theme=light-academia]{--bg:#f0e9d9;--panel:#faf5e9;--border:#d6c7ad;--text:#4a4030;--muted:#8c7b62;--accent:#9b7850;--accent-text:#fffaf0;--heading:Georgia,serif;--surface-detail:linear-gradient(145deg,#fff8,transparent 70%)}
+:root[data-theme=romantic-academia]{--bg:#f2e7e5;--panel:#fff5f1;--border:#dcc5c3;--text:#644850;--muted:#9b7c84;--accent:#a66a7a;--accent-text:#fff9f6;--heading:Georgia,serif;--surface-detail:linear-gradient(145deg,#fff9,transparent 65%)}
+:root[data-theme=modern]{--bg:#171b20;--panel:#242b31;--border:#3d4851;--text:#e9edf0;--muted:#a0aab2;--accent:#a5b7c1;--accent-text:#182127;--heading:'DM Sans',sans-serif;--surface-detail:none}
+:root[data-theme=gothic]{--bg:#100d10;--panel:#21191e;--border:#513942;--text:#e9dce0;--muted:#a9949d;--accent:#a65b70;--accent-text:#fff3f5;--heading:Georgia,serif;--surface-detail:linear-gradient(145deg,#5e34451c,transparent 70%)}
+:root[data-theme=cyberpunk]{--bg:#0b1020;--panel:#131e32;--border:#29465c;--text:#dcf5f6;--muted:#87aab9;--accent:#4bd6d0;--accent-text:#06191c;--heading:'DM Sans',sans-serif;--surface-detail:linear-gradient(135deg,#39e0d00c,transparent 65%)}
+.player-header strong{font-family:var(--heading);letter-spacing:.15px}
+.player-sound{background-image:var(--surface-detail);transition:border-color .15s,background-color .15s}
+:root[data-theme=dark-academia] .player-sound,:root[data-theme=light-academia] .player-sound,:root[data-theme=romantic-academia] .player-sound{border-radius:7px}
+:root[data-theme=modern] .player-sound{border-radius:5px}
+:root[data-theme=gothic] .player-sound{border-radius:3px;border-top-color:#73505d}
+:root[data-theme=cyberpunk] .player-sound{border-radius:4px;box-shadow:inset 0 1px #4bd6d012}
+:root[data-theme=cyberpunk] .is-active .sound-switch{box-shadow:0 0 12px #4bd6d025}
+:root[data-theme=gothic] .player-header strong{letter-spacing:1px}
+:root[data-theme=romantic-academia] .player-header strong{font-style:italic}
+.pomodoro-label{font:500 12px 'DM Sans',sans-serif;border:0;background:none;color:var(--text);padding:0;min-height:18px;font-variant-numeric:tabular-nums}
+.pomodoro-bottom{display:flex;align-items:center;justify-content:center;gap:4px;height:27px;color:var(--muted);font-size:11px}
+.pomodoro-bottom .icon-button{padding:4px}
+.player-settings input[type=number]{width:74px;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:7px;border-radius:6px}
