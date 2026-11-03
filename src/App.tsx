@@ -149,8 +149,8 @@ export default function App() {
       onDrop={e=>{e.preventDefault();if(dragging)move(dragging,s.id);setDragging(null);}}
       onDragEnd={()=>setDragging(null)}>
       {reordering?<div className="drag-handle" draggable onDragStart={e=>{setDragging(s.id);e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',s.id);}} title={'Drag to move '+s.name}><GripVertical size={24}/><span>{s.name}</span></div>:<>
-        <button className="sound-switch" onClick={()=>updateSound(s.id,{active:!s.active})} aria-pressed={s.active} title={s.active?'Disable '+s.name:'Enable '+s.name}><Icon size={24}/></button>
-        <div className="sound-name" title={s.name}>{s.name}</div>
+        <button className="sound-switch" onClick={()=>{if(!s.file){setNotice(s.name+' audio has not been bundled yet.');return;}updateSound(s.id,{active:!s.active});}} aria-pressed={s.active} title={s.active?'Disable '+s.name:'Enable '+s.name}><Icon size={24}/></button>
+        <div className="sound-name" title={s.file?s.name:s.name+' — audio pending'}>{s.name}{!s.file&&<span className="audio-pending" title="Audio not yet included"> ·</span>}</div>
         <div className="sound-volume"><input aria-label={s.name+' volume'} type="range" min="0" max="100" value={s.volume} onChange={e=>updateSound(s.id,{volume:Number(e.target.value)})}/><button className="icon-button" title={s.muted?'Unmute':'Mute'} onClick={()=>updateSound(s.id,{muted:!s.muted})}>{s.muted?<VolumeX size={15}/>:<Volume2 size={15}/>}</button></div>
         {s.file&&<button className="sound-delete" title={'Remove '+s.name} aria-label={'Remove '+s.name} onClick={()=>setSounds(old=>old.filter(x=>x.id!==s.id))}><Trash2 size={13}/></button>}
       </>}
