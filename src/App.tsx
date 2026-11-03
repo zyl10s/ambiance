@@ -25,7 +25,6 @@ export default function App() {
   const [settings,setSettings] = useState<Settings>(()=>stored('ambiance.settings',defaultSettings));
   const [sounds,setSounds] = useState<Sound[]>(()=>{const saved=stored<Sound[]>('ambiance.sounds',[]);const known=new Set(saved.map(s=>s.id));return [...saved,...builtins.filter(b=>!known.has(b[0])).map(([id,name,icon])=>({id,name,icon,file:'',volume:60,muted:false,active:false}))]});
   const [presets,setPresets] = useState<Preset[]>(()=>stored('ambiance.presets',[]));
-  const playing=true;
   const [showSettings,setShowSettings] = useState(false);
   const [notice,setNotice] = useState('');
   const [reordering,setReordering]=useState(false);
@@ -56,20 +55,36 @@ export default function App() {
       });
     }catch{setNotice('Chime could not play on this device.');}
   };
+  // A clock escapement has two alternating impacts: a sharp tooth strike
+  // followed by a quieter, lower resonant click. Use filtered noise rather
+  // than a sustained square wave so it sounds more like metal and wood.
+  const tickParity=useRef(0);
   const mechanicalTick=(volume:number)=>{
     if(volume<=0)return;
     try{
       const ctx=chimeContext.current??new AudioContext();chimeContext.current=ctx;
       if(ctx.state!=='running')return;
+      const parity=tickParity.current++%2;
       const t=ctx.currentTime;
-      const oscillator=ctx.createOscillator(),gain=ctx.createGain(),filter=ctx.createBiquadFilter();
-      oscillator.type='square';oscillator.frequency.setValueAtTime(1250,t);oscillator.frequency.exponentialRampToValueAtTime(570,t+0.018);
-      filter.type='bandpass';filter.frequency.value=1050;filter.Q.value=0.7;
-      const level=Math.max(0.0001,volume/100*0.095);
-      gain.gain.setValueAtTime(0.0001,t);gain.gain.exponentialRampToValueAtTime(level,t+0.002);
-      gain.gain.exponentialRampToValueAtTime(0.0001,t+0.045);
-      oscillator.connect(filter);filter.connect(gain);gain.connect(ctx.destination);
-      oscillator.start(t);oscillator.stop(t+0.05);
+      const buffer=ctx.createBuffer(1,Math.ceil(ctx.sampleRate*0.085),ctx.sampleRate);
+      const data=buffer.getChannelData(0);
+      let previous=0;
+      for(let i=0;i<data.length;i++){
+        const time=i/ctx.sampleRate;
+        const burst=Math.exp(-time*(parity?100:145));
+        const noise=(Math.random()*2-1);
+        previous=previous*0.68+noise*0.32;
+        data[i]=(noise-previous)*burst;
+      }
+      const source=ctx.createBufferSource();source.buffer=buffer;
+      const filter=ctx.createBiquadFilter();filter.type='bandpass';
+      filter.frequency.value=parity?850:1450;filter.Q.value=0.85;
+      const gain=ctx.createGain();
+      gain.gain.setValueAtTime(0.0001,t);
+      gain.gain.exponentialRampToValueAtTime(Math.max(0.0001,volume/100*(parity?0.22:0.29)),t+0.001);
+      gain.gain.exponentialRampToValueAtTime(0.0001,t+0.078);
+      source.connect(filter);filter.connect(gain);gain.connect(ctx.destination);
+      source.start(t);source.stop(t+0.083);
     }catch{}
   };
   const startClick=()=>{
@@ -84,7 +99,7 @@ export default function App() {
   const toggleTimer=()=>{
     if(!timerStarted){try{const ctx=chimeContext.current??new AudioContext();chimeContext.current=ctx;void ctx.resume();}catch{}startClick();const n=(settings.pomodoroMinutes??25)*60;timerRemaining.current=n;setTimerSeconds(n);setTimerStarted(true);timerDeadline.current=Date.now()+n*1000;timerRunningRef.current=true;setTimerRunning(true);}
     else if(timerRunningRef.current){const n=Math.max(0,Math.ceil(((timerDeadline.current??Date.now())-Date.now())/1000));timerRemaining.current=n;setTimerSeconds(n);timerRunningRef.current=false;setTimerRunning(false);timerDeadline.current=null;}
-    else{startClick();timerDeadline.current=Date.now()+timerRemaining.current*1000;timerRunningRef.current=true;setTimerRunning(true);}
+    else{if(timerRemaining.current<=0){resetTimer();return;}startClick();timerDeadline.current=Date.now()+timerRemaining.current*1000;timerRunningRef.current=true;setTimerRunning(true);}
   };
   const resetTimer=()=>{timerRunningRef.current=false;setTimerRunning(false);setTimerStarted(false);timerDeadline.current=null;const n=(settings.pomodoroMinutes??25)*60;timerRemaining.current=n;setTimerSeconds(n);};
   useEffect(()=>{
@@ -92,17 +107,15 @@ export default function App() {
     const tick=()=>{
       const n=Math.max(0,Math.ceil(((timerDeadline.current??Date.now())-Date.now())/1000));
       timerRemaining.current=n;setTimerSeconds(n);
-      const elapsedSecond=Math.floor(Date.now()/1000);
+      const elapsedSecond=Math.floor((timerDeadline.current??Date.now())/1000)-n;
       if(n>0&&tickVolume>0&&lastTickSecond.current!==elapsedSecond){lastTickSecond.current=elapsedSecond;mechanicalTick(tickVolume);}
-      if(n===0){timerRunningRef.current=false;setTimerRunning(false);timerDeadline.current=null;if(settings.chimeEnabled!==false)chime();setNotice('Pomodoro finished.');}
+      if(n===0){timerRunningRef.current=false;setTimerRunning(false);setTimerStarted(false);timerDeadline.current=null;if(settings.chimeEnabled!==false)chime();setNotice('Pomodoro finished.');}
     };
     tick();const interval=window.setInterval(tick,250);return()=>window.clearInterval(interval);
   },[timerRunning,settings.chimeEnabled,tickVolume]);
 
   const audio = useRef<Map<string,HTMLAudioElement>>(new Map());
   const urls = useRef<Map<string,string>>(new Map());
-  const soundsRef = useRef(sounds); soundsRef.current=sounds;
-  const playingRef = useRef(playing); playingRef.current=playing;
   const initialized = useRef(false);
   const [ready,setReady] = useState(false);
 
@@ -154,10 +167,10 @@ export default function App() {
       if(!src)continue;
       if(!element){element=new Audio(src);element.loop=true;audio.current.set(s.id,element);}
       element.volume=s.muted?0:s.volume/100;
-      if(playing&&s.active){if(element.paused)void element.play().catch(()=>setNotice('Playback was blocked. Press play again.'));}
+      if(s.active){if(element.paused)void element.play().catch(()=>setNotice('Playback was blocked. Press play again.'));}
       else element.pause();
     }
-  },[sounds,playing,ready]);
+  },[sounds,ready]);
 
   useEffect(()=>()=>{for(const a of audio.current.values())a.pause();for(const u of urls.current.values())URL.revokeObjectURL(u);},[]);
   const updateSound=(id:string,patch:Partial<Sound>)=>setSounds(old=>old.map(s=>s.id===id?{...s,...patch}:s));
