@@ -85,3 +85,8 @@ body{font-family:'DM Sans',sans-serif}
 :root[data-theme=gothic] .player-header strong{font-family:Georgia,serif;text-transform:uppercase;font-size:16px;letter-spacing:2px}
 :root[data-theme=cyberpunk] .player-header strong{font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:14px}
 :root[data-theme=cyberpunk] .player-sound.is-active{box-shadow:inset 0 0 0 1px #24e0d130,0 0 12px #24e0d00b}
+
+.pomodoro-tick{display:flex;align-items:center;gap:5px;width:100%;height:20px}
+.pomodoro-tick input{width:100%;min-width:0;accent-color:var(--accent)}
+.pomodoro-tick span{font-size:10px;color:var(--muted);min-width:28px;text-align:right;font-variant-numeric:tabular-nums}
+.pomodoro-tile .pomodoro-bottom{min-height:27px}
