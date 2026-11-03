@@ -6,12 +6,12 @@ import { appDataDir, join } from '@tauri-apps/api/path';
 import { mkdir, readDir, readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-dialog';
 
-type Theme = 'dark-academia' | 'light-academia' | 'modern' | 'gothic' | 'cyberpunk';
+type Theme = 'dark-academia' | 'light-academia' | 'romantic-academia' | 'modern' | 'gothic' | 'cyberpunk';
 type Sound = { id: string; name: string; file: string; volume: number; muted: boolean; active: boolean };
 type Preset = { id: string; name: string; mix: Pick<Sound,'id'|'volume'|'muted'|'active'>[] };
 type Settings = { theme: Theme; autoplay: 'off'|'last'|'preset'; launchPreset: string; startHidden: boolean };
 const themes: { id: Theme; label: string }[] = [
-  {id:'dark-academia',label:'Dark Academia'}, {id:'light-academia',label:'Light Academia'},
+  {id:'dark-academia',label:'Dark Academia'}, {id:'light-academia',label:'Light Academia'}, {id:'romantic-academia',label:'Romantic Academia'},
   {id:'modern',label:'Modern'}, {id:'gothic',label:'Gothic'}, {id:'cyberpunk',label:'Cyberpunk'}
 ];
 const defaultSettings: Settings = {theme:'dark-academia',autoplay:'off',launchPreset:'',startHidden:false};
