@@ -11,3 +11,29 @@
 .inline-focus{margin-bottom:35px}.inline-focus>.primary{margin-bottom:8px}.compact-timer{display:flex;justify-content:space-between;align-items:center;gap:20px;border:1px solid var(--accent);border-radius:13px;background:var(--panel);padding:20px 26px;margin-bottom:8px}.compact-clock{font-size:clamp(35px,5vw,62px);font-variant-numeric:tabular-nums;font-weight:600;letter-spacing:-2px}.corner-gear{align-self:flex-start;padding:10px}.top .corner-gear{display:inline-flex}.focus-settings{margin-top:15px;margin-bottom:25px}.focus-settings>label:not(.check){display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0;color:var(--muted);font-size:13px}.focus-settings select,.focus-settings input[readonly]{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px;max-width:230px;width:100%}@media(max-width:760px){.compact-timer{flex-direction:column;align-items:stretch}.compact-timer .timer-actions{justify-content:start}}
 
 :root[data-theme=romantic-academia]{color-scheme:light;--bg:#f7edf0;--side:#eee0e4;--panel:#fff7f6;--border:#dfc8ce;--text:#593f49;--muted:#937883;--accent:#aa7182;--accent-text:#fff9f8;--heading:'Libre Baskerville',serif}
+
+/* Compact sound-first interface; theme tokens above remain unchanged. */
+body{font-family:'DM Sans',sans-serif}
+.player{width:min(100%,760px);min-height:100vh;margin:0 auto;display:flex;flex-direction:column;background:var(--bg)}
+.player-header{height:64px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.player-header strong{font-size:17px;font-weight:600;letter-spacing:-.3px}
+.player-tools,.preset-controls,.sound-volume{display:flex;align-items:center;gap:6px}
+.icon-button{border:0;background:transparent;color:var(--muted);border-radius:7px;padding:7px;display:inline-grid;place-items:center}
+.icon-button:hover{background:var(--panel);color:var(--text)}
+.player-main{flex:1;padding:26px 24px}
+.player-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.player-sound{position:relative;display:flex;flex-direction:column;align-items:center;gap:11px;padding:18px 10px 14px;border:1px solid var(--border);border-radius:10px;background:var(--panel);min-width:0}
+.player-sound.is-active{border-color:var(--accent)}
+.sound-switch{width:54px;height:54px;display:grid;place-items:center;border:1px solid var(--border);background:var(--bg);color:var(--muted);border-radius:14px}
+.is-active .sound-switch{color:var(--accent);border-color:var(--accent)}
+.sound-name{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center}
+.sound-volume{width:100%}.sound-volume input{width:100%;min-width:0;accent-color:var(--accent);height:15px}
+.sound-delete{position:absolute;top:4px;right:4px;opacity:0;border:0;background:transparent;color:var(--muted);padding:4px}
+.player-sound:hover .sound-delete,.sound-delete:focus-visible{opacity:1}
+.player-empty{min-height:250px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--muted);font-size:13px}
+.player-footer{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--border);padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px}
+.preset-controls select,.player-settings select{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px;max-width:175px}
+.player-play{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:var(--accent);color:var(--accent-text)}
+.player-settings{padding:14px 24px;border-bottom:1px solid var(--border);display:grid;gap:10px}
+.player-settings label{display:flex;align-items:center;justify-content:space-between;gap:16px;font-size:13px}
+@media(max-width:500px){.player-header{padding:0 16px}.player-main{padding:16px}.player-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.player-footer{padding:12px 16px}.sound-delete{opacity:1}}
