@@ -1,6 +1,6 @@
 # Ambiance
 
-A Linux-first, open-source desktop ambient sound mixer with five distinct visual themes. Inspired by the simplicity of Blanket, but not affiliated with it.
+A Windows-first, open-source desktop ambient sound mixer with five distinct visual themes. Inspired by the simplicity of Blanket, but not affiliated with it.
 
 ## Features
 
@@ -14,14 +14,14 @@ A Linux-first, open-source desktop ambient sound mixer with five distinct visual
 
 ## Development
 
-Requirements: Node.js 20+, npm, Rust stable, and [Tauri v2 Linux prerequisites](https://v2.tauri.app/start/prerequisites/).
+Requirements (Windows 10/11): Node.js 20+, npm, Rust stable with the MSVC toolchain, Microsoft C++ Build Tools and WebView2. See [Tauri v2 Windows prerequisites](https://v2.tauri.app/start/prerequisites/).
 
 ```bash
 npm install
 npm run tauri dev
 ```
 
-For browser-only preview: `npm run dev`. Build desktop packages: `npm run tauri build`.
+On Windows, the production installer can be built using `npm run tauri build` (NSIS/MSI depending on Tauri bundle configuration). For browser-only preview: `npm run dev`. Build desktop packages: `npm run tauri build`.
 
 ## Audio
 
