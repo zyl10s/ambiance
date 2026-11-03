@@ -1,6 +1,5 @@
-import FocusTimer from './FocusTimer';
 import { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Plus, Save, Trash2, Volume2, VolumeX, Settings2, Music2, Upload, Moon, PanelTopClose } from 'lucide-react';
+import { Play, Pause, Plus, Save, Trash2, Volume2, VolumeX, Settings2, Music2 } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
 import { appDataDir, join } from '@tauri-apps/api/path';
 import { mkdir, readDir, readFile, writeFile } from '@tauri-apps/plugin-fs';
@@ -127,34 +126,33 @@ export default function App() {
       }
     }catch(e){setNotice('Import failed: '+String(e));}
   };
-  const active=sounds.filter(s=>s.active).length;
-  return <div className="shell">
-    <aside className="sidebar">
-      <div className="brand"><div className="brand-icon"><Moon size={23}/></div><div><strong>ambiance</strong><small>YOUR SPACE, YOUR SOUND</small></div></div>
-      <div className="side-label">YOUR LIBRARY</div>
-      <div className="nav selected"><Music2 size={18}/> Soundscape <span>{sounds.length}</span></div>
-      <div className="side-label spaced">PRESETS <button title="Save current mix" onClick={savePreset}><Plus size={16}/></button></div>
-      <div className="preset-list">{presets.map(p=><div className="preset" key={p.id}><button onClick={()=>applyPreset(p)} title="Load preset">{p.name}</button><button title="Delete preset" onClick={()=>setPresets(old=>old.filter(x=>x.id!==p.id))}><Trash2 size={14}/></button></div>)}</div>
-      <div className="sidebar-foot">A LITTLE PEACE, ON DEMAND</div>
-    </aside>
-    <main className="main">
-      <header className="top"><div><span className="eyebrow">YOUR STUDY SANCTUARY</span><h1>Make space to focus<span>.</span></h1><p>Study with intention. Build your atmosphere, then settle into focus.</p></div><button className="ghost corner-gear" aria-label="Settings" title="Settings" onClick={()=>setShowSettings(!showSettings)}><Settings2 size={20}/></button></header>
-      {showSettings?<section className="panel preferences"><div className="section-heading"><h2>Preferences</h2><button className="ghost" onClick={()=>setShowSettings(false)}>Close</button></div>
-        <label>Appearance<select value={settings.theme} onChange={e=>setSettings({...settings,theme:e.target.value as Theme})}>{themes.map(t=><option value={t.id} key={t.id}>{t.label}</option>)}</select></label>
-        <label>On launch<select value={settings.autoplay} onChange={e=>setSettings({...settings,autoplay:e.target.value as Settings['autoplay']})}><option value="off">Do not auto-play</option><option value="last">Play last selected mix</option><option value="preset">Play launch preset</option></select></label>
-        {settings.autoplay==='preset'&&<label>Launch preset<select value={settings.launchPreset} onChange={e=>setSettings({...settings,launchPreset:e.target.value})}><option value="">Choose preset</option>{presets.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
-        <label className="check"><input type="checkbox" checked={settings.startHidden} onChange={e=>setSettings({...settings,startHidden:e.target.checked})}/> Start hidden in system tray (desktop only)</label>
-      </section>:null}
-      <FocusTimer settingsOpen={showSettings}/><div className="section-heading"><div><span className="eyebrow">YOUR MIX</span><h2>Soundscape <span className="count">{active} active</span></h2></div><button className="outline" onClick={importFiles}><Upload size={16}/> Import sounds</button></div>
-      {sounds.length===0?<div className="empty"><div className="empty-art">♫</div><h3>A blank canvas for your calm.</h3><p>Import rain, crackling fireplaces, distant cafés, or any audio you love. Then layer, balance and save your mix.</p><button className="primary" onClick={importFiles}><Plus size={17}/> Add your first sound</button></div>:
-      <div className="sound-grid">{sounds.map(s=><article className={'sound-card '+(s.active?'on':'')} key={s.id}>
-        <div className="card-top"><div className="sound-icon"><Volume2 size={21}/></div><button className={'toggle '+(s.active?'enabled':'')} aria-label={s.active?'Disable '+s.name:'Enable '+s.name} onClick={()=>updateSound(s.id,{active:!s.active})}><span/></button></div>
-        <h3>{s.name}</h3><p>{s.active?'In your soundscape':'Not playing'}</p>
-        <div className="volume"><button title={s.muted?'Unmute':'Mute'} onClick={()=>updateSound(s.id,{muted:!s.muted})}>{s.muted?<VolumeX size={17}/>:<Volume2 size={17}/>}</button><input aria-label={s.name+' volume'} type="range" min="0" max="100" value={s.volume} onChange={e=>updateSound(s.id,{volume:Number(e.target.value)})}/><span>{s.volume}%</span></div>
-        <button className="remove" onClick={()=>setSounds(old=>old.filter(x=>x.id!==s.id))} title="Remove sound"><Trash2 size={15}/></button>
-      </article>)}</div>}
-      <div className="bottom"><div><span className="eyebrow">CURRENT SESSION</span><strong>{active?active+' layered sound'+(active===1?'':'s'):'Nothing playing yet'}</strong></div><div className="controls"><button className="outline" onClick={savePreset}><Save size={17}/> Save preset</button><button className="primary play" onClick={()=>setPlaying(!playing)}>{playing?<Pause size={18} fill="currentColor"/>:<Play size={18} fill="currentColor"/>}{playing?'Pause all':'Play all'}</button></div></div>
-      {notice&&<div role="status" className="toast" onClick={()=>setNotice('')}>{notice} ×</div>}
+  return <div className="player">
+    <header className="player-header">
+      <strong>Ambiance</strong>
+      <div className="player-tools">
+        <button className="icon-button" title="Import audio" aria-label="Import audio" onClick={importFiles}><Plus size={19}/></button>
+        <button className="icon-button" title="Settings" aria-label="Settings" onClick={()=>setShowSettings(!showSettings)}><Settings2 size={19}/></button>
+      </div>
+    </header>
+    {showSettings&&<section className="player-settings">
+      <label>Theme <select value={settings.theme} onChange={e=>setSettings({...settings,theme:e.target.value as Theme})}>{themes.map(t=><option value={t.id} key={t.id}>{t.label}</option>)}</select></label>
+      <label>On launch <select value={settings.autoplay} onChange={e=>setSettings({...settings,autoplay:e.target.value as Settings['autoplay']})}><option value="off">Do not play</option><option value="last">Last sounds</option><option value="preset">Preset</option></select></label>
+      {settings.autoplay==='preset'&&<label>Preset <select value={settings.launchPreset} onChange={e=>setSettings({...settings,launchPreset:e.target.value})}><option value="">Select preset</option>{presets.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label>}
+      <label><span>Start in tray</span><input type="checkbox" checked={settings.startHidden} onChange={e=>setSettings({...settings,startHidden:e.target.checked})}/></label>
+    </section>}
+    <main className="player-main">
+      {sounds.length===0?<div className="player-empty"><Music2 size={32}/><span>No sounds added</span><button className="outline" onClick={importFiles}><Plus size={16}/> Add sounds</button></div>:
+      <div className="player-grid">{sounds.map(s=><div className={'player-sound '+(s.active?'is-active':'')} key={s.id}>
+        <button className="sound-switch" onClick={()=>updateSound(s.id,{active:!s.active})} aria-pressed={s.active} title={s.active?'Disable '+s.name:'Enable '+s.name}><Volume2 size={24}/></button>
+        <div className="sound-name" title={s.name}>{s.name}</div>
+        <div className="sound-volume"><input aria-label={s.name+' volume'} type="range" min="0" max="100" value={s.volume} onChange={e=>updateSound(s.id,{volume:Number(e.target.value)})}/><button className="icon-button" title={s.muted?'Unmute':'Mute'} onClick={()=>updateSound(s.id,{muted:!s.muted})}>{s.muted?<VolumeX size={15}/>:<Volume2 size={15}/>}</button></div>
+        <button className="sound-delete" title={'Remove '+s.name} aria-label={'Remove '+s.name} onClick={()=>setSounds(old=>old.filter(x=>x.id!==s.id))}><Trash2 size={13}/></button>
+      </div>)}</div>}
     </main>
+    <footer className="player-footer">
+      <div className="preset-controls"><select aria-label="Presets" defaultValue="" onChange={e=>{const p=presets.find(p=>p.id===e.target.value);if(p)applyPreset(p);}}><option value="">Presets</option>{presets.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><button className="icon-button" title="Save preset" onClick={savePreset}><Save size={17}/></button>{presets.length>0&&<button className="icon-button" title="Delete selected preset" onClick={()=>{const select=document.querySelector<HTMLSelectElement>('.preset-controls select');if(select?.value)setPresets(old=>old.filter(p=>p.id!==select.value));if(select)select.value='';}}><Trash2 size={15}/></button>}</div>
+      <button className="player-play" onClick={()=>setPlaying(!playing)} title={playing?'Pause all':'Play all'} aria-label={playing?'Pause all':'Play all'}>{playing?<Pause size={21} fill="currentColor"/>:<Play size={21} fill="currentColor"/>}</button>
+    </footer>
+    {notice&&<div className="toast" role="status" onClick={()=>setNotice('')}>{notice} ×</div>}
   </div>;
 }
