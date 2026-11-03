@@ -55,7 +55,7 @@ export default function App() {
     }catch{setNotice('Chime could not play on this device.');}
   };
   const toggleTimer=()=>{
-    if(!timerStarted){const n=(settings.pomodoroMinutes??25)*60;timerRemaining.current=n;setTimerSeconds(n);setTimerStarted(true);timerDeadline.current=Date.now()+n*1000;timerRunningRef.current=true;setTimerRunning(true);}
+    if(!timerStarted){try{const ctx=chimeContext.current??new AudioContext();chimeContext.current=ctx;void ctx.resume();}catch{}const n=(settings.pomodoroMinutes??25)*60;timerRemaining.current=n;setTimerSeconds(n);setTimerStarted(true);timerDeadline.current=Date.now()+n*1000;timerRunningRef.current=true;setTimerRunning(true);}
     else if(timerRunningRef.current){const n=Math.max(0,Math.ceil(((timerDeadline.current??Date.now())-Date.now())/1000));timerRemaining.current=n;setTimerSeconds(n);timerRunningRef.current=false;setTimerRunning(false);timerDeadline.current=null;}
     else{timerDeadline.current=Date.now()+timerRemaining.current*1000;timerRunningRef.current=true;setTimerRunning(true);}
   };
@@ -78,6 +78,7 @@ export default function App() {
   const [ready,setReady] = useState(false);
 
   useEffect(()=>{persist('ambiance.settings',settings);document.documentElement.dataset.theme=settings.theme},[settings]);
+  useEffect(()=>()=>{if(chimeContext.current)void chimeContext.current.close();},[]);
   useEffect(()=>persist('ambiance.sounds',sounds),[sounds]);
   useEffect(()=>persist('ambiance.presets',presets),[presets]);
 
