@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Plus, Save, Trash2, Volume2, VolumeX, Settings2, Music2 } from 'lucide-react';
+import { Play, Pause, Plus, Save, Trash2, Volume2, VolumeX, Settings2, Music2, CloudRain, CloudDrizzle, Wind, Waves, Flame, TreePine, Bird, Coffee, TrainFront, Moon, GripVertical, Grip, Radio, Droplets, Fan, BookOpen, CloudLightning } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
 import { appDataDir, join } from '@tauri-apps/api/path';
 import { mkdir, readDir, readFile, writeFile } from '@tauri-apps/plugin-fs';
 import { open } from '@tauri-apps/plugin-dialog';
 
 type Theme = 'dark-academia' | 'light-academia' | 'romantic-academia' | 'modern' | 'gothic' | 'cyberpunk';
-type Sound = { id: string; name: string; file: string; volume: number; muted: boolean; active: boolean };
+type Sound = { id: string; name: string; file: string; volume: number; muted: boolean; active: boolean; icon?: string };
 type Preset = { id: string; name: string; mix: Pick<Sound,'id'|'volume'|'muted'|'active'>[] };
 type Settings = { theme: Theme; autoplay: 'off'|'last'|'preset'; launchPreset: string; startHidden: boolean };
 const themes: { id: Theme; label: string }[] = [
   {id:'dark-academia',label:'Dark Academia'}, {id:'light-academia',label:'Light Academia'}, {id:'romantic-academia',label:'Romantic Academia'},
   {id:'modern',label:'Modern'}, {id:'gothic',label:'Gothic'}, {id:'cyberpunk',label:'Cyberpunk'}
 ];
+const builtins=[['rain','Rain','rain'],['storm','Thunderstorm','storm'],['wind','Wind','wind'],['waves','Ocean','waves'],['fire','Fireplace','fire'],['forest','Forest','forest'],['birds','Birds','birds'],['cafe','Café','cafe'],['train','Train','train'],['night','Night','night'],['stream','Stream','stream'],['fan','Fan','fan'],['library','Library','library'],['drizzle','Light rain','drizzle']] as const;
+const icons:Record<string,typeof Volume2>={rain:CloudRain,storm:CloudLightning,wind:Wind,waves:Waves,fire:Flame,forest:TreePine,birds:Bird,cafe:Coffee,train:TrainFront,night:Moon,stream:Droplets,fan:Fan,library:BookOpen,drizzle:CloudDrizzle,music:Music2,radio:Radio};
 const defaultSettings: Settings = {theme:'dark-academia',autoplay:'off',launchPreset:'',startHidden:false};
 const stored = <T,>(key: string, fallback: T): T => { try { return JSON.parse(localStorage.getItem(key) || '') as T; } catch { return fallback; } };
 const persist = (key:string,value:unknown) => localStorage.setItem(key,JSON.stringify(value));
@@ -21,11 +23,15 @@ const safeFilename = (name:string) => name.replace(/[^a-zA-Z0-9._-]/g,'_');
 
 export default function App() {
   const [settings,setSettings] = useState<Settings>(()=>stored('ambiance.settings',defaultSettings));
-  const [sounds,setSounds] = useState<Sound[]>(()=>stored('ambiance.sounds',[]));
+  const [sounds,setSounds] = useState<Sound[]>(()=>{const saved=stored<Sound[]>('ambiance.sounds',[]);const known=new Set(saved.map(s=>s.id));return [...saved,...builtins.filter(b=>!known.has(b[0])).map(([id,name,icon])=>({id,name,icon,file:'',volume:60,muted:false,active:false}))]});
   const [presets,setPresets] = useState<Preset[]>(()=>stored('ambiance.presets',[]));
   const [playing,setPlaying] = useState(false);
   const [showSettings,setShowSettings] = useState(false);
   const [notice,setNotice] = useState('');
+  const [reordering,setReordering]=useState(false);
+  const [dragging,setDragging]=useState<string|null>(null);
+  const [customIcon,setCustomIcon]=useState('music');
+  const [adding,setAdding]=useState(false);
   const audio = useRef<Map<string,HTMLAudioElement>>(new Map());
   const urls = useRef<Map<string,string>>(new Map());
   const soundsRef = useRef(sounds); soundsRef.current=sounds;
@@ -108,7 +114,7 @@ export default function App() {
           const file=uid()+'-'+safeFilename(name);
           await writeFile(await join(dir,file),bytes);
           urls.current.set(file,URL.createObjectURL(new Blob([bytes])));
-          added.push({id:uid(),name:name.replace(/\.[^.]+$/,''),file,volume:60,muted:false,active:true});
+          added.push({id:uid(),name:name.replace(/\.[^.]+$/,''),file,volume:60,muted:false,active:true,icon:customIcon});
         }
         setSounds(old=>[...old,...added]);
       } else {
@@ -117,7 +123,7 @@ export default function App() {
           const files=Array.from(picker.files||[]);
           const added=files.map(file=>{
             const key=uid()+'-'+file.name;urls.current.set(key,URL.createObjectURL(file));
-            return {id:uid(),name:file.name.replace(/\.[^.]+$/,''),file:key,volume:60,muted:false,active:true};
+            return {id:uid(),name:file.name.replace(/\.[^.]+$/,''),file:key,volume:60,muted:false,active:true,icon:customIcon};
           });
           setSounds(old=>[...old,...added]);
           setNotice('Browser imports are temporary. Use the desktop app for persistent audio.');
@@ -126,33 +132,34 @@ export default function App() {
       }
     }catch(e){setNotice('Import failed: '+String(e));}
   };
+  const move=(from:string,to:string)=>{if(from===to)return;setSounds(old=>{const list=[...old];const i=list.findIndex(s=>s.id===from),j=list.findIndex(s=>s.id===to);if(i<0||j<0)return old;const [item]=list.splice(i,1);list.splice(j,0,item);return list;});};
   return <div className="player">
-    <header className="player-header">
-      <strong>Ambiance</strong>
-      <div className="player-tools">
-        <button className="icon-button" title="Import audio" aria-label="Import audio" onClick={importFiles}><Plus size={19}/></button>
-        <button className="icon-button" title="Settings" aria-label="Settings" onClick={()=>setShowSettings(!showSettings)}><Settings2 size={19}/></button>
-      </div>
-    </header>
+    <header className="player-header"><strong>Ambiance</strong><div className="player-tools">
+      <button className={'icon-button '+(reordering?'tool-selected':'')} title="Arrange sounds" aria-label="Arrange sounds" aria-pressed={reordering} onClick={()=>setReordering(!reordering)}><Grip size={18}/></button>
+      <button className="icon-button" title="Settings" aria-label="Settings" onClick={()=>setShowSettings(!showSettings)}><Settings2 size={19}/></button>
+    </div></header>
     {showSettings&&<section className="player-settings">
       <label>Theme <select value={settings.theme} onChange={e=>setSettings({...settings,theme:e.target.value as Theme})}>{themes.map(t=><option value={t.id} key={t.id}>{t.label}</option>)}</select></label>
       <label>On launch <select value={settings.autoplay} onChange={e=>setSettings({...settings,autoplay:e.target.value as Settings['autoplay']})}><option value="off">Do not play</option><option value="last">Last sounds</option><option value="preset">Preset</option></select></label>
       {settings.autoplay==='preset'&&<label>Preset <select value={settings.launchPreset} onChange={e=>setSettings({...settings,launchPreset:e.target.value})}><option value="">Select preset</option>{presets.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}</select></label>}
       <label><span>Start in tray</span><input type="checkbox" checked={settings.startHidden} onChange={e=>setSettings({...settings,startHidden:e.target.checked})}/></label>
     </section>}
-    <main className="player-main">
-      {sounds.length===0?<div className="player-empty"><Music2 size={32}/><span>No sounds added</span><button className="outline" onClick={importFiles}><Plus size={16}/> Add sounds</button></div>:
-      <div className="player-grid">{sounds.map(s=><div className={'player-sound '+(s.active?'is-active':'')} key={s.id}>
-        <button className="sound-switch" onClick={()=>updateSound(s.id,{active:!s.active})} aria-pressed={s.active} title={s.active?'Disable '+s.name:'Enable '+s.name}><Volume2 size={24}/></button>
+    <main className="player-main"><div className="player-grid">{sounds.map(s=>{const Icon=icons[s.icon||'music']||Music2;return <div className={'player-sound '+(s.active?'is-active ':'')+(reordering?'reordering':'')} key={s.id}
+      onDragOver={e=>{if(reordering){e.preventDefault();e.dataTransfer.dropEffect='move';}}}
+      onDrop={e=>{e.preventDefault();if(dragging)move(dragging,s.id);setDragging(null);}}
+      onDragEnd={()=>setDragging(null)}>
+      {reordering?<div className="drag-handle" draggable onDragStart={e=>{setDragging(s.id);e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',s.id);}} title={'Drag to move '+s.name}><GripVertical size={24}/><span>{s.name}</span></div>:<>
+        <button className="sound-switch" onClick={()=>updateSound(s.id,{active:!s.active})} aria-pressed={s.active} title={s.active?'Disable '+s.name:'Enable '+s.name}><Icon size={24}/></button>
         <div className="sound-name" title={s.name}>{s.name}</div>
         <div className="sound-volume"><input aria-label={s.name+' volume'} type="range" min="0" max="100" value={s.volume} onChange={e=>updateSound(s.id,{volume:Number(e.target.value)})}/><button className="icon-button" title={s.muted?'Unmute':'Mute'} onClick={()=>updateSound(s.id,{muted:!s.muted})}>{s.muted?<VolumeX size={15}/>:<Volume2 size={15}/>}</button></div>
-        <button className="sound-delete" title={'Remove '+s.name} aria-label={'Remove '+s.name} onClick={()=>setSounds(old=>old.filter(x=>x.id!==s.id))}><Trash2 size={13}/></button>
-      </div>)}</div>}
-    </main>
+        {s.file&&<button className="sound-delete" title={'Remove '+s.name} aria-label={'Remove '+s.name} onClick={()=>setSounds(old=>old.filter(x=>x.id!==s.id))}><Trash2 size={13}/></button>}
+      </>}
+    </div>})}</div></main>
     <footer className="player-footer">
       <div className="preset-controls"><select aria-label="Presets" defaultValue="" onChange={e=>{const p=presets.find(p=>p.id===e.target.value);if(p)applyPreset(p);}}><option value="">Presets</option>{presets.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><button className="icon-button" title="Save preset" onClick={savePreset}><Save size={17}/></button>{presets.length>0&&<button className="icon-button" title="Delete selected preset" onClick={()=>{const select=document.querySelector<HTMLSelectElement>('.preset-controls select');if(select?.value)setPresets(old=>old.filter(p=>p.id!==select.value));if(select)select.value='';}}><Trash2 size={15}/></button>}</div>
-      <button className="player-play" onClick={()=>setPlaying(!playing)} title={playing?'Pause all':'Play all'} aria-label={playing?'Pause all':'Play all'}>{playing?<Pause size={21} fill="currentColor"/>:<Play size={21} fill="currentColor"/>}</button>
+      <div className="footer-right"><button className="icon-button add-track" title="Add your own track" aria-label="Add your own track" onClick={()=>setAdding(!adding)}><Plus size={18}/></button><button className="player-play" onClick={()=>setPlaying(!playing)} title={playing?'Pause all':'Play all'} aria-label={playing?'Pause all':'Play all'}>{playing?<Pause size={21} fill="currentColor"/>:<Play size={21} fill="currentColor"/>}</button></div>
     </footer>
+    {adding&&<div className="add-track-panel"><label>Track icon <select value={customIcon} onChange={e=>setCustomIcon(e.target.value)}>{Object.keys(icons).map(icon=><option key={icon} value={icon}>{icon}</option>)}</select></label><button className="outline" onClick={()=>{setAdding(false);void importFiles();}}>Choose audio file</button><button className="icon-button" onClick={()=>setAdding(false)} aria-label="Cancel">×</button></div>}
     {notice&&<div className="toast" role="status" onClick={()=>setNotice('')}>{notice} ×</div>}
   </div>;
 }
