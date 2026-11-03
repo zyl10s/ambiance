@@ -35,6 +35,8 @@ export default function App() {
   const [timerStarted,setTimerStarted]=useState(false);
   const [timerRunning,setTimerRunning]=useState(false);
   const [timerSeconds,setTimerSeconds]=useState(25*60);
+  const [tickVolume,setTickVolume]=useState(()=>stored('ambiance.pomodoroTickVolume',0));
+  const lastTickSecond=useRef<number|null>(null);
   const timerDeadline=useRef<number|null>(null);
   const timerRemaining=useRef(25*60);
   const timerRunningRef=useRef(false);
@@ -53,6 +55,22 @@ export default function App() {
         osc.start(ctx.currentTime+delay);osc.stop(ctx.currentTime+delay+0.57);
       });
     }catch{setNotice('Chime could not play on this device.');}
+  };
+  const mechanicalTick=(volume:number)=>{
+    if(volume<=0)return;
+    try{
+      const ctx=chimeContext.current??new AudioContext();chimeContext.current=ctx;
+      if(ctx.state!=='running')return;
+      const t=ctx.currentTime;
+      const oscillator=ctx.createOscillator(),gain=ctx.createGain(),filter=ctx.createBiquadFilter();
+      oscillator.type='square';oscillator.frequency.setValueAtTime(1250,t);oscillator.frequency.exponentialRampToValueAtTime(570,t+0.018);
+      filter.type='bandpass';filter.frequency.value=1050;filter.Q.value=0.7;
+      const level=Math.max(0.0001,volume/100*0.095);
+      gain.gain.setValueAtTime(0.0001,t);gain.gain.exponentialRampToValueAtTime(level,t+0.002);
+      gain.gain.exponentialRampToValueAtTime(0.0001,t+0.045);
+      oscillator.connect(filter);filter.connect(gain);gain.connect(ctx.destination);
+      oscillator.start(t);oscillator.stop(t+0.05);
+    }catch{}
   };
   const startClick=()=>{
     try{
@@ -74,10 +92,12 @@ export default function App() {
     const tick=()=>{
       const n=Math.max(0,Math.ceil(((timerDeadline.current??Date.now())-Date.now())/1000));
       timerRemaining.current=n;setTimerSeconds(n);
+      const elapsedSecond=Math.floor(Date.now()/1000);
+      if(n>0&&tickVolume>0&&lastTickSecond.current!==elapsedSecond){lastTickSecond.current=elapsedSecond;mechanicalTick(tickVolume);}
       if(n===0){timerRunningRef.current=false;setTimerRunning(false);timerDeadline.current=null;if(settings.chimeEnabled!==false)chime();setNotice('Pomodoro finished.');}
     };
     tick();const interval=window.setInterval(tick,250);return()=>window.clearInterval(interval);
-  },[timerRunning,settings.chimeEnabled]);
+  },[timerRunning,settings.chimeEnabled,tickVolume]);
 
   const audio = useRef<Map<string,HTMLAudioElement>>(new Map());
   const urls = useRef<Map<string,string>>(new Map());
@@ -90,6 +110,7 @@ export default function App() {
   useEffect(()=>()=>{if(chimeContext.current)void chimeContext.current.close();},[]);
   useEffect(()=>persist('ambiance.sounds',sounds),[sounds]);
   useEffect(()=>persist('ambiance.presets',presets),[presets]);
+  useEffect(()=>persist('ambiance.pomodoroTickVolume',tickVolume),[tickVolume]);
 
   useEffect(()=>{
     let cancelled=false;
@@ -198,6 +219,7 @@ export default function App() {
       <div className={'player-sound pomodoro-tile '+(timerStarted?'is-active':'')}>
         <button className="sound-switch" onClick={toggleTimer} title={!timerStarted?'Start Pomodoro':timerRunning?'Pause Pomodoro':'Resume Pomodoro'} aria-label={!timerStarted?'Start Pomodoro':timerRunning?'Pause Pomodoro':'Resume Pomodoro'}><Timer size={24}/></button>
         <button className="pomodoro-label" onClick={toggleTimer} title={!timerStarted?'Start Pomodoro':timerRunning?'Pause Pomodoro':'Resume Pomodoro'}>{timerStarted?String(Math.floor(timerSeconds/60)).padStart(2,'0')+':'+String(timerSeconds%60).padStart(2,'0'):'Pomodoro'}</button>
+        {timerStarted&&<div className="pomodoro-tick"><input type="range" min="0" max="100" value={tickVolume} aria-label="Mechanical clock tick volume" title={'Clock tick volume: '+tickVolume+'%'} onChange={e=>setTickVolume(Number(e.target.value))}/><span title="Clock tick volume">{tickVolume===0?'Off':tickVolume+'%'}</span></div>}
         <div className="pomodoro-bottom">{timerStarted?<><span>{timerRunning?'Running':'Paused'}</span><button className="icon-button" title="Reset Pomodoro" aria-label="Reset Pomodoro" onClick={resetTimer}><RotateCcw size={15}/></button></>:<span> </span>}</div>
       </div>
       {sounds.map(s=>{const Icon=icons[s.icon||'music']||Music2;return <div className={'player-sound '+(s.active?'is-active ':'')+(reordering?'reordering':'')} key={s.id}
