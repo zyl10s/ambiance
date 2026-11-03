@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Plus, Save, Trash2, Volume2, VolumeX, Settings2, Music2, CloudRain, CloudDrizzle, Wind, Waves, Flame, TreePine, Bird, Coffee, TrainFront, Moon, GripVertical, Grip, Radio, Droplets, Fan, BookOpen, CloudLightning, Timer, RotateCcw } from 'lucide-react';
+import { Plus, Save, Trash2, Volume2, VolumeX, Settings2, Music2, CloudRain, CloudDrizzle, Wind, Waves, Flame, TreePine, Bird, Coffee, TrainFront, Moon, GripVertical, Grip, Radio, Droplets, Fan, BookOpen, CloudLightning, Timer, RotateCcw } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
 import { appDataDir, join } from '@tauri-apps/api/path';
 import { mkdir, readDir, readFile, writeFile } from '@tauri-apps/plugin-fs';
@@ -25,7 +25,7 @@ export default function App() {
   const [settings,setSettings] = useState<Settings>(()=>stored('ambiance.settings',defaultSettings));
   const [sounds,setSounds] = useState<Sound[]>(()=>{const saved=stored<Sound[]>('ambiance.sounds',[]);const known=new Set(saved.map(s=>s.id));return [...saved,...builtins.filter(b=>!known.has(b[0])).map(([id,name,icon])=>({id,name,icon,file:'',volume:60,muted:false,active:false}))]});
   const [presets,setPresets] = useState<Preset[]>(()=>stored('ambiance.presets',[]));
-  const [playing,setPlaying] = useState(false);
+  const playing=true;
   const [showSettings,setShowSettings] = useState(false);
   const [notice,setNotice] = useState('');
   const [reordering,setReordering]=useState(false);
@@ -135,10 +135,10 @@ export default function App() {
   useEffect(()=>{
     if(!ready||initialized.current)return;
     initialized.current=true;
-    if(settings.autoplay==='last')setPlaying(true);
+
     if(settings.autoplay==='preset'){
       const preset=presets.find(p=>p.id===settings.launchPreset);
-      if(preset){applyPreset(preset);setPlaying(true);}
+      if(preset){applyPreset(preset);}
     }
   },[ready]);
 
@@ -235,7 +235,7 @@ export default function App() {
     </div>})}</div></main>
     <footer className="player-footer">
       <div className="preset-controls"><select aria-label="Presets" defaultValue="" onChange={e=>{const p=presets.find(p=>p.id===e.target.value);if(p)applyPreset(p);}}><option value="">Presets</option>{presets.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select><button className="icon-button" title="Save preset" onClick={savePreset}><Save size={17}/></button>{presets.length>0&&<button className="icon-button" title="Delete selected preset" onClick={()=>{const select=document.querySelector<HTMLSelectElement>('.preset-controls select');if(select?.value)setPresets(old=>old.filter(p=>p.id!==select.value));if(select)select.value='';}}><Trash2 size={15}/></button>}</div>
-      <div className="footer-right"><button className="icon-button add-track" title="Add your own track" aria-label="Add your own track" onClick={()=>setAdding(!adding)}><Plus size={18}/></button><button className="player-play" onClick={()=>setPlaying(!playing)} title={playing?'Pause all':'Play all'} aria-label={playing?'Pause all':'Play all'}>{playing?<Pause size={21} fill="currentColor"/>:<Play size={21} fill="currentColor"/>}</button></div>
+      <div className="footer-right"><button className="icon-button add-track" title="Add your own track" aria-label="Add your own track" onClick={()=>setAdding(!adding)}><Plus size={18}/></button></div>
     </footer>
     {adding&&<div className="add-track-panel"><label>Track icon <select value={customIcon} onChange={e=>setCustomIcon(e.target.value)}>{Object.keys(icons).map(icon=><option key={icon} value={icon}>{icon}</option>)}</select></label><button className="outline" onClick={()=>{setAdding(false);void importFiles();}}>Choose audio file</button><button className="icon-button" onClick={()=>setAdding(false)} aria-label="Cancel">×</button></div>}
     {notice&&<div className="toast" role="status" onClick={()=>setNotice('')}>{notice} ×</div>}
