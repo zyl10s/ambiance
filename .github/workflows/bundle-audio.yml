@@ -1,0 +1,48 @@
+name: Bundle offline ambient recordings
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/bundle-audio.yml'
+permissions:
+  contents: write
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download licensed recordings
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          from urllib.parse import quote
+          assets = {
+              "rain": ("Rain (1).ogg", 100_000),
+              "storm": ("Rain and thunder.ogg", 100_000),
+              "cafe": ("Cafe ambiance.ogg", 1_000_000),
+          }
+          folder = Path("public/audio")
+          folder.mkdir(parents=True, exist_ok=True)
+          for name, (source, minimum) in assets.items():
+              url = "https://commons.wikimedia.org/wiki/Special:Redirect/file/" + quote(source)
+              request = Request(url, headers={"User-Agent": "AmbianceOfflineAudio/0.1 (https://github.com/zyl10s/ambiance)"})
+              with urlopen(request, timeout=90) as response:
+                  data = response.read(30_000_001)
+              if not data.startswith(b"OggS") or not minimum <= len(data) <= 30_000_000:
+                  raise RuntimeError(f"Invalid audio download for {name}: {len(data)} bytes")
+              (folder / f"{name}.ogg").write_bytes(data)
+              print(f"Bundled {name}: {len(data)} bytes")
+          PY
+      - name: Commit recordings
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/audio/*.ogg
+          if ! git diff --cached --quiet; then
+            git commit -m "Bundle CC0 and public-domain ambient recordings for offline playback"
+            git push
+          fi
