@@ -1,3 +1,5 @@
+import FocusTimer from './FocusTimer';
+import { Clock3 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Play, Pause, Plus, Save, Trash2, Volume2, VolumeX, Settings2, Music2, Upload, Moon, PanelTopClose } from 'lucide-react';
 import { isTauri } from '@tauri-apps/api/core';
@@ -24,6 +26,7 @@ export default function App() {
   const [sounds,setSounds] = useState<Sound[]>(()=>stored('ambiance.sounds',[]));
   const [presets,setPresets] = useState<Preset[]>(()=>stored('ambiance.presets',[]));
   const [playing,setPlaying] = useState(false);
+  const [page,setPage] = useState<'sounds'|'focus'>('focus');
   const [showSettings,setShowSettings] = useState(false);
   const [notice,setNotice] = useState('');
   const audio = useRef<Map<string,HTMLAudioElement>>(new Map());
@@ -131,21 +134,21 @@ export default function App() {
     <aside className="sidebar">
       <div className="brand"><div className="brand-icon"><Moon size={23}/></div><div><strong>ambiance</strong><small>YOUR SPACE, YOUR SOUND</small></div></div>
       <div className="side-label">YOUR LIBRARY</div>
-      <button className="nav selected"><Music2 size={18}/> Soundscape <span>{sounds.length}</span></button>
+      <button className={'nav '+(page==='sounds'?'selected':'')} onClick={()=>setPage('sounds')}><Music2 size={18}/> Soundscape <span>{sounds.length}</span></button><button className={'nav '+(page==='focus'?'selected':'')} onClick={()=>setPage('focus')}><Clock3 size={18}/> Focus timer</button>
       <div className="side-label spaced">PRESETS <button title="Save current mix" onClick={savePreset}><Plus size={16}/></button></div>
       <div className="preset-list">{presets.map(p=><div className="preset" key={p.id}><button onClick={()=>applyPreset(p)} title="Load preset">{p.name}</button><button title="Delete preset" onClick={()=>setPresets(old=>old.filter(x=>x.id!==p.id))}><Trash2 size={14}/></button></div>)}</div>
       <button className="nav settings-link" onClick={()=>setShowSettings(!showSettings)}><Settings2 size={18}/> Preferences</button>
       <div className="sidebar-foot">A LITTLE PEACE, ON DEMAND</div>
     </aside>
     <main className="main">
-      <header className="top"><div><span className="eyebrow">THE AMBIENT STUDIO</span><h1>Find your atmosphere<span>.</span></h1><p>Layer the sounds that make a space feel like yours.</p></div><button className="ghost" onClick={()=>setShowSettings(!showSettings)}><Settings2 size={17}/> Customize</button></header>
+      <header className="top"><div><span className="eyebrow">YOUR STUDY SANCTUARY</span><h1>Make space to focus<span>.</span></h1><p>Study with intention. Build your atmosphere, then settle into focus.</p></div><button className="ghost" onClick={()=>setShowSettings(!showSettings)}><Settings2 size={17}/> Customize</button></header>
       {showSettings?<section className="panel preferences"><div className="section-heading"><h2>Preferences</h2><button className="ghost" onClick={()=>setShowSettings(false)}>Close</button></div>
         <label>Appearance<select value={settings.theme} onChange={e=>setSettings({...settings,theme:e.target.value as Theme})}>{themes.map(t=><option value={t.id} key={t.id}>{t.label}</option>)}</select></label>
         <label>On launch<select value={settings.autoplay} onChange={e=>setSettings({...settings,autoplay:e.target.value as Settings['autoplay']})}><option value="off">Do not auto-play</option><option value="last">Play last selected mix</option><option value="preset">Play launch preset</option></select></label>
         {settings.autoplay==='preset'&&<label>Launch preset<select value={settings.launchPreset} onChange={e=>setSettings({...settings,launchPreset:e.target.value})}><option value="">Choose preset</option>{presets.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>}
         <label className="check"><input type="checkbox" checked={settings.startHidden} onChange={e=>setSettings({...settings,startHidden:e.target.checked})}/> Start hidden in system tray (desktop only)</label>
       </section>:null}
-      <div className="section-heading"><div><span className="eyebrow">YOUR MIX</span><h2>Soundscape <span className="count">{active} active</span></h2></div><button className="outline" onClick={importFiles}><Upload size={16}/> Import sounds</button></div>
+      {page==='focus'?<FocusTimer/>:<><div className="section-heading"><div><span className="eyebrow">YOUR MIX</span><h2>Soundscape <span className="count">{active} active</span></h2></div><button className="outline" onClick={importFiles}><Upload size={16}/> Import sounds</button></div>
       {sounds.length===0?<div className="empty"><div className="empty-art">♫</div><h3>A blank canvas for your calm.</h3><p>Import rain, crackling fireplaces, distant cafés, or any audio you love. Then layer, balance and save your mix.</p><button className="primary" onClick={importFiles}><Plus size={17}/> Add your first sound</button></div>:
       <div className="sound-grid">{sounds.map(s=><article className={'sound-card '+(s.active?'on':'')} key={s.id}>
         <div className="card-top"><div className="sound-icon"><Volume2 size={21}/></div><button className={'toggle '+(s.active?'enabled':'')} aria-label={s.active?'Disable '+s.name:'Enable '+s.name} onClick={()=>updateSound(s.id,{active:!s.active})}><span/></button></div>
@@ -154,6 +157,7 @@ export default function App() {
         <button className="remove" onClick={()=>setSounds(old=>old.filter(x=>x.id!==s.id))} title="Remove sound"><Trash2 size={15}/></button>
       </article>)}</div>}
       <div className="bottom"><div><span className="eyebrow">CURRENT SESSION</span><strong>{active?active+' layered sound'+(active===1?'':'s'):'Nothing playing yet'}</strong></div><div className="controls"><button className="outline" onClick={savePreset}><Save size={17}/> Save preset</button><button className="primary play" onClick={()=>setPlaying(!playing)}>{playing?<Pause size={18} fill="currentColor"/>:<Play size={18} fill="currentColor"/>}{playing?'Pause all':'Play all'}</button></div></div>
+      </>}
       {notice&&<div role="status" className="toast" onClick={()=>setNotice('')}>{notice} ×</div>}
     </main>
   </div>;
