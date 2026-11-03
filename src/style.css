@@ -90,3 +90,30 @@ body{font-family:'DM Sans',sans-serif}
 .pomodoro-tick input{width:100%;min-width:0;accent-color:var(--accent)}
 .pomodoro-tick span{font-size:10px;color:var(--muted);min-width:28px;text-align:right;font-variant-numeric:tabular-nums}
 .pomodoro-tile .pomodoro-bottom{min-height:27px}
+
+/* Theme personalities without changing the compact sound-mixer layout. */
+:root[data-theme=light-academia] .player{background:radial-gradient(ellipse at 50% -20%,#fff9e8 0%,transparent 65%),var(--bg)}
+:root[data-theme=light-academia] .player-header{border-bottom:2px double var(--border)}
+:root[data-theme=light-academia] .player-sound{border-radius:3px;box-shadow:0 2px 0 #9d85591a}
+:root[data-theme=light-academia] .sound-switch{border-radius:50%;background:#f4ebd7}
+:root[data-theme=romantic-academia] .player{background:radial-gradient(ellipse at 75% 0%,#ffe2ed 0%,transparent 65%),var(--bg)}
+:root[data-theme=romantic-academia] .player-sound{border-radius:17px;border-color:#eacbd8;box-shadow:0 4px 16px #c56f9510}
+:root[data-theme=romantic-academia] .sound-switch{border-radius:50%;background:#fff0f5}
+:root[data-theme=romantic-academia] .player-header strong{font-family:Georgia,serif;font-style:italic;font-weight:400;letter-spacing:.4px}
+:root[data-theme=modern] .player-header{border-bottom-color:#e2e7e9}
+:root[data-theme=modern] .player-sound{border-radius:12px;border-color:transparent;background:#fff;box-shadow:0 2px 10px #172a3610}
+:root[data-theme=modern] .player-sound.is-active{border-color:#72919c;box-shadow:0 2px 12px #172a361a}
+:root[data-theme=modern] .sound-switch{border-radius:12px;background:#f1f5f6;border-color:transparent}
+:root[data-theme=modern] .player-header strong{font-size:18px;letter-spacing:-.8px}
+:root[data-theme=gothic] .player{background:radial-gradient(ellipse at 50% -35%,#3b1a2b 0%,transparent 68%),var(--bg)}
+:root[data-theme=gothic] .player-header{border-bottom:1px solid #6a3a4b}
+:root[data-theme=gothic] .player-sound{border-radius:2px;border-top:2px solid #6d3b4c;box-shadow:inset 0 0 0 1px #0005}
+:root[data-theme=gothic] .sound-switch{border-radius:2px;background:#120e13;border-color:#65404e}
+:root[data-theme=gothic] .player-header strong{font-variant:small-caps;text-transform:none;font-size:19px;letter-spacing:2.5px}
+:root[data-theme=cyberpunk] .player{background:repeating-linear-gradient(0deg,transparent 0 38px,#1e99a407 39px 40px),var(--bg)}
+:root[data-theme=cyberpunk] .player-header{border-bottom-color:#1c7d88}
+:root[data-theme=cyberpunk] .player-sound{border-radius:2px;border-color:#275168;background:#111c30;box-shadow:inset 0 1px #2fffe119}
+:root[data-theme=cyberpunk] .sound-switch{border-radius:2px;background:#071421;border-color:#286c77}
+:root[data-theme=cyberpunk] .player-sound.is-active{border-color:#24e0d1;box-shadow:0 0 0 1px #24e0d122,inset 0 0 15px #24e0d10b}
+:root[data-theme=cyberpunk] .player-header strong{font-family:monospace;font-size:16px;letter-spacing:2px}
+:root[data-theme=cyberpunk] input[type=range]{accent-color:#24e0d1}
