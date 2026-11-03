@@ -14,12 +14,6 @@ const themes: { id: Theme; label: string }[] = [
   {id:'modern',label:'Modern'}, {id:'gothic',label:'Gothic'}, {id:'cyberpunk',label:'Cyberpunk'}
 ];
 const builtins=[['rain','Rain','rain'],['storm','Thunderstorm','storm'],['wind','Wind','wind'],['waves','Ocean','waves'],['fire','Fireplace','fire'],['forest','Forest','forest'],['birds','Birds','birds'],['cafe','Café','cafe'],['train','Train','train'],['night','Night','night'],['stream','Stream','stream'],['fan','Fan','fan'],['library','Library','library'],['drizzle','Light rain','drizzle']] as const;
-// CC0/public-domain field recordings hosted by Wikimedia Commons.
-// These stream while online; they are not yet bundled for offline use.
-const remoteBuiltins:Record<string,string>={
-  rain:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Rain_(1).ogg',
-  cafe:'https://commons.wikimedia.org/wiki/Special:Redirect/file/Cafe_ambiance.ogg'
-};
 const icons:Record<string,typeof Volume2>={rain:CloudRain,storm:CloudLightning,wind:Wind,waves:Waves,fire:Flame,forest:TreePine,birds:Bird,cafe:Coffee,train:TrainFront,night:Moon,stream:Droplets,fan:Fan,library:BookOpen,drizzle:CloudDrizzle,music:Music2,radio:Radio};
 const defaultSettings: Settings = {theme:'dark-academia',autoplay:'off',launchPreset:'',startHidden:false,pomodoroMinutes:25,chimeEnabled:true};
 const stored = <T,>(key: string, fallback: T): T => { try { return JSON.parse(localStorage.getItem(key) || '') as T; } catch { return fallback; } };
@@ -169,11 +163,11 @@ export default function App() {
     }
     for(const s of sounds){
       let element=audio.current.get(s.id);
-      const src=urls.current.get(s.file)||remoteBuiltins[s.id];
+      const src=urls.current.get(s.file);
       if(!src)continue;
       if(!element){element=new Audio(src);element.loop=true;audio.current.set(s.id,element);}
       element.volume=s.muted?0:s.volume/100;
-      if(s.active){if(element.paused)void element.play().catch(()=>setNotice('Could not play '+s.name+'. Check your internet connection or try again.'));}
+      if(s.active){if(element.paused)void element.play().catch(()=>setNotice('Could not play '+s.name+'. Please try again.'));}
       else element.pause();
     }
   },[sounds,ready]);
@@ -246,8 +240,8 @@ export default function App() {
       onDrop={e=>{e.preventDefault();if(dragging)move(dragging,s.id);setDragging(null);}}
       onDragEnd={()=>setDragging(null)}>
       {reordering?<div className="drag-handle" draggable onDragStart={e=>{setDragging(s.id);e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',s.id);}} title={'Drag to move '+s.name}><GripVertical size={24}/><span>{s.name}</span></div>:<>
-        <button className="sound-switch" onClick={()=>{if(!s.file&&!remoteBuiltins[s.id]){setNotice(s.name+' audio has not been bundled yet.');return;}updateSound(s.id,{active:!s.active});}} aria-pressed={s.active} title={s.active?'Disable '+s.name:'Enable '+s.name}><Icon size={24}/></button>
-        <div className="sound-name" title={s.file||remoteBuiltins[s.id]?s.name:s.name+' — audio pending'}>{s.name}{!s.file&&!remoteBuiltins[s.id]&&<span className="audio-pending" title="Audio not yet included"> ·</span>}</div>
+        <button className="sound-switch" onClick={()=>{if(!s.file){setNotice(s.name+' audio has not been bundled yet.');return;}updateSound(s.id,{active:!s.active});}} aria-pressed={s.active} title={s.active?'Disable '+s.name:'Enable '+s.name}><Icon size={24}/></button>
+        <div className="sound-name" title={s.file?s.name:s.name+' — audio pending'}>{s.name}{!s.file&&!remoteBuiltins[s.id]&&<span className="audio-pending" title="Audio not yet included"> ·</span>}</div>
         <div className="sound-volume"><input aria-label={s.name+' volume'} type="range" min="0" max="100" value={s.volume} onChange={e=>updateSound(s.id,{volume:Number(e.target.value)})}/><button className="icon-button" title={s.muted?'Unmute':'Mute'} onClick={()=>updateSound(s.id,{muted:!s.muted})}>{s.muted?<VolumeX size={15}/>:<Volume2 size={15}/>}</button></div>
         {s.file&&<button className="sound-delete" title={'Remove '+s.name} aria-label={'Remove '+s.name} onClick={()=>setSounds(old=>old.filter(x=>x.id!==s.id))}><Trash2 size={13}/></button>}
       </>}
