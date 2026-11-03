@@ -73,3 +73,15 @@ body{font-family:'DM Sans',sans-serif}
 .pomodoro-bottom{display:flex;align-items:center;justify-content:center;gap:4px;height:27px;color:var(--muted);font-size:11px}
 .pomodoro-bottom .icon-button{padding:4px}
 .player-settings input[type=number]{width:74px;border:1px solid var(--border);background:var(--panel);color:var(--text);padding:7px;border-radius:6px}
+
+/* Refined visual identities after feedback. */
+:root[data-theme=romantic-academia]{--bg:#f8edf0;--panel:#fff8f8;--border:#e8cbd5;--text:#62444e;--muted:#a17c8a;--accent:#d783a1;--accent-text:#381e2b;--surface-detail:linear-gradient(145deg,#fffafbe0,#ffe9f01c)}
+:root[data-theme=light-academia]{--bg:#f5eedc;--panel:#fff9e9;--border:#d9c5a0;--text:#53432e;--muted:#907e62;--accent:#a17b42;--accent-text:#fffaf0;--surface-detail:linear-gradient(140deg,#fffdf3,#ead9b31c)}
+:root[data-theme=modern]{--bg:#eceff0;--panel:#fafbfb;--border:#cbd2d4;--text:#263238;--muted:#718087;--accent:#466b79;--accent-text:#fff;--surface-detail:none;color-scheme:light}
+:root[data-theme=gothic]{--bg:#100d10;--panel:#1b141a;--border:#513342;--text:#e9d8df;--muted:#a88b9b;--accent:#b14f70;--accent-text:#fff5f7;--surface-detail:linear-gradient(150deg,#7131481b,transparent 72%)}
+:root[data-theme=cyberpunk]{--bg:#080b17;--panel:#11182a;--border:#2a4260;--text:#e2f9f9;--muted:#87a8c2;--accent:#24e0d1;--accent-text:#06191d;--surface-detail:linear-gradient(145deg,#19e4db0b,transparent 62%)}
+:root[data-theme=light-academia] .player-header strong{font-family:Georgia,serif;font-weight:400}
+:root[data-theme=modern] .player-header strong{font-family:'DM Sans',sans-serif;font-weight:700;letter-spacing:-.5px}
+:root[data-theme=gothic] .player-header strong{font-family:Georgia,serif;text-transform:uppercase;font-size:16px;letter-spacing:2px}
+:root[data-theme=cyberpunk] .player-header strong{font-family:'DM Sans',sans-serif;text-transform:uppercase;letter-spacing:2px;font-size:14px}
+:root[data-theme=cyberpunk] .player-sound.is-active{box-shadow:inset 0 0 0 1px #24e0d130,0 0 12px #24e0d00b}
