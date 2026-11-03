@@ -54,10 +54,19 @@ export default function App() {
       });
     }catch{setNotice('Chime could not play on this device.');}
   };
+  const startClick=()=>{
+    try{
+      const ctx=chimeContext.current??new AudioContext();chimeContext.current=ctx;void ctx.resume();
+      const osc=ctx.createOscillator(),gain=ctx.createGain(),t=ctx.currentTime;
+      osc.type='triangle';osc.frequency.setValueAtTime(950,t);osc.frequency.exponentialRampToValueAtTime(480,t+0.045);
+      gain.gain.setValueAtTime(0.0001,t);gain.gain.exponentialRampToValueAtTime(0.09,t+0.004);gain.gain.exponentialRampToValueAtTime(0.0001,t+0.065);
+      osc.connect(gain);gain.connect(ctx.destination);osc.start(t);osc.stop(t+0.07);
+    }catch{}
+  };
   const toggleTimer=()=>{
-    if(!timerStarted){try{const ctx=chimeContext.current??new AudioContext();chimeContext.current=ctx;void ctx.resume();}catch{}const n=(settings.pomodoroMinutes??25)*60;timerRemaining.current=n;setTimerSeconds(n);setTimerStarted(true);timerDeadline.current=Date.now()+n*1000;timerRunningRef.current=true;setTimerRunning(true);}
+    if(!timerStarted){try{const ctx=chimeContext.current??new AudioContext();chimeContext.current=ctx;void ctx.resume();}catch{}startClick();const n=(settings.pomodoroMinutes??25)*60;timerRemaining.current=n;setTimerSeconds(n);setTimerStarted(true);timerDeadline.current=Date.now()+n*1000;timerRunningRef.current=true;setTimerRunning(true);}
     else if(timerRunningRef.current){const n=Math.max(0,Math.ceil(((timerDeadline.current??Date.now())-Date.now())/1000));timerRemaining.current=n;setTimerSeconds(n);timerRunningRef.current=false;setTimerRunning(false);timerDeadline.current=null;}
-    else{timerDeadline.current=Date.now()+timerRemaining.current*1000;timerRunningRef.current=true;setTimerRunning(true);}
+    else{startClick();timerDeadline.current=Date.now()+timerRemaining.current*1000;timerRunningRef.current=true;setTimerRunning(true);}
   };
   const resetTimer=()=>{timerRunningRef.current=false;setTimerRunning(false);setTimerStarted(false);timerDeadline.current=null;const n=(settings.pomodoroMinutes??25)*60;timerRemaining.current=n;setTimerSeconds(n);};
   useEffect(()=>{
